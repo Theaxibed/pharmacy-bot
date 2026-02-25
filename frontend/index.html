@@ -6,17 +6,22 @@
   <title>Заявка на препараты</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #f4f6fb;
+      --bg: #f0f4ff;
       --card: #ffffff;
       --primary: #2563eb;
       --primary-light: #dbeafe;
-      --danger: #ef4444;
-      --success: #22c55e;
+      --success: #16a34a;
+      --success-light: #dcfce7;
+      --danger: #dc2626;
+      --danger-light: #fee2e2;
+      --warn: #d97706;
+      --warn-light: #fef3c7;
       --muted: #94a3b8;
-      --text: #1e293b;
+      --text: #0f172a;
+      --text2: #475569;
       --border: #e2e8f0;
     }
 
@@ -25,595 +30,701 @@
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
-      padding-bottom: 100px;
+      padding-bottom: 90px;
     }
 
-    /* ── Header ── */
+    /* ── HEADER ── */
     .header {
       background: var(--primary);
       color: white;
-      padding: 16px 20px 12px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      box-shadow: 0 2px 8px rgba(37,99,235,0.3);
+      padding: 14px 16px 10px;
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 12px rgba(37,99,235,.35);
     }
-    .header h1 { font-size: 18px; font-weight: 700; }
-    .header p  { font-size: 12px; opacity: 0.8; margin-top: 2px; }
+    .header-top { display: flex; justify-content: space-between; align-items: center; }
+    .header h1 { font-size: 17px; font-weight: 700; }
+    .rep-badge {
+      background: rgba(255,255,255,.2);
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .header-sub { font-size: 12px; opacity: .75; margin-top: 3px; }
 
-    /* ── Tabs ── */
+    /* ── TABS ── */
     .tabs {
       display: flex;
       background: white;
-      border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 58px;
-      z-index: 99;
+      border-bottom: 2px solid var(--border);
+      position: sticky; top: 55px; z-index: 99;
     }
     .tab {
-      flex: 1;
-      padding: 12px;
-      text-align: center;
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--muted);
-      cursor: pointer;
-      border-bottom: 3px solid transparent;
+      flex: 1; padding: 11px 8px;
+      text-align: center; font-size: 13px; font-weight: 600;
+      color: var(--muted); cursor: pointer;
+      border-bottom: 3px solid transparent; margin-bottom: -2px;
       transition: all .2s;
     }
     .tab.active { color: var(--primary); border-color: var(--primary); }
-
-    /* ── Search ── */
-    .search-box {
-      padding: 12px 16px;
-      background: white;
-      border-bottom: 1px solid var(--border);
+    .tab-badge {
+      display: inline-block; background: var(--danger);
+      color: white; border-radius: 10px; font-size: 10px;
+      padding: 1px 5px; margin-left: 4px; font-weight: 700;
     }
+
+    /* ── SEARCH ── */
+    .search-box { padding: 10px 14px; background: white; border-bottom: 1px solid var(--border); }
     .search-box input {
-      width: 100%;
-      padding: 9px 14px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      font-size: 14px;
-      outline: none;
+      width: 100%; padding: 9px 14px;
+      border: 1.5px solid var(--border); border-radius: 10px;
+      font-size: 14px; outline: none; background: var(--bg);
     }
-    .search-box input:focus { border-color: var(--primary); }
+    .search-box input:focus { border-color: var(--primary); background: white; }
 
-    /* ── Product card ── */
-    .products-list { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+    /* ── CATALOG ── */
+    .products-list { padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; }
 
     .product-card {
-      background: var(--card);
-      border-radius: 14px;
-      padding: 14px 16px;
-      box-shadow: 0 1px 4px rgba(0,0,0,.06);
-      border: 1px solid var(--border);
+      background: var(--card); border-radius: 14px;
+      padding: 13px 14px; border: 1.5px solid var(--border);
+      box-shadow: 0 1px 3px rgba(0,0,0,.05);
+      transition: border-color .15s;
     }
-    .product-card.out-of-stock { opacity: .55; }
+    .product-card.in-cart { border-color: var(--primary); }
+    .product-card.out-of-stock { opacity: .5; }
 
     .product-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
-    .product-name { font-size: 15px; font-weight: 600; line-height: 1.3; }
-    .product-desc { font-size: 12px; color: var(--muted); margin-top: 3px; }
+    .product-name { font-size: 14px; font-weight: 700; line-height: 1.3; }
+    .product-desc { font-size: 12px; color: var(--text2); margin-top: 2px; }
+    .product-price { font-size: 13px; font-weight: 700; color: var(--primary); margin-top: 3px; }
 
     .stock-badge {
-      font-size: 11px;
-      font-weight: 600;
-      padding: 3px 9px;
-      border-radius: 20px;
-      white-space: nowrap;
-      flex-shrink: 0;
+      font-size: 11px; font-weight: 700;
+      padding: 3px 8px; border-radius: 20px; white-space: nowrap; flex-shrink: 0;
     }
-    .stock-badge.ok   { background: #dcfce7; color: #15803d; }
-    .stock-badge.low  { background: #fef9c3; color: #a16207; }
-    .stock-badge.zero { background: #fee2e2; color: #b91c1c; }
+    .badge-ok   { background: var(--success-light); color: var(--success); }
+    .badge-low  { background: var(--warn-light); color: var(--warn); }
+    .badge-zero { background: var(--danger-light); color: var(--danger); }
 
-    .product-controls {
-      display: flex;
-      align-items: center;
-      margin-top: 12px;
-      gap: 10px;
-    }
-    .qty-controls {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: var(--bg);
-      border-radius: 10px;
-      padding: 4px 8px;
+    .product-controls { display: flex; align-items: center; margin-top: 10px; gap: 8px; }
+    .qty-wrap {
+      display: flex; align-items: center; gap: 4px;
+      background: var(--bg); border-radius: 10px; padding: 3px 6px;
     }
     .qty-btn {
-      width: 28px;
-      height: 28px;
-      border: none;
-      border-radius: 7px;
-      background: var(--primary);
-      color: white;
-      font-size: 18px;
-      font-weight: 700;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      line-height: 1;
+      width: 30px; height: 30px; border: none; border-radius: 8px;
+      background: var(--primary); color: white;
+      font-size: 20px; font-weight: 600; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      line-height: 1; transition: background .1s;
     }
     .qty-btn:disabled { background: var(--muted); cursor: default; }
+    .qty-btn:active { background: #1d4ed8; }
     .qty-input {
-      width: 50px;
-      text-align: center;
-      border: none;
-      background: transparent;
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--text);
-      outline: none;
+      width: 46px; text-align: center; border: none;
+      background: transparent; font-size: 15px; font-weight: 700;
+      color: var(--text); outline: none;
     }
-
     .add-btn {
-      flex: 1;
-      padding: 9px;
-      border: none;
-      border-radius: 10px;
-      background: var(--primary);
-      color: white;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background .15s;
+      flex: 1; padding: 9px 10px; border: none; border-radius: 10px;
+      background: var(--primary-light); color: var(--primary);
+      font-size: 13px; font-weight: 700; cursor: pointer; transition: all .15s;
     }
-    .add-btn:active { background: #1d4ed8; }
-    .add-btn.in-cart { background: var(--success); }
-    .add-btn:disabled { background: var(--muted); cursor: default; }
+    .add-btn.in-cart { background: var(--primary); color: white; }
+    .add-btn:disabled { background: var(--border); color: var(--muted); cursor: default; }
 
-    /* ── Cart ── */
-    .cart-section { padding: 12px 16px; }
-    .cart-empty { text-align: center; color: var(--muted); padding: 60px 0; font-size: 15px; }
-    .cart-empty span { font-size: 40px; display: block; margin-bottom: 10px; }
+    /* ── CART ── */
+    .cart-wrap { padding: 10px 14px; display: flex; flex-direction: column; gap: 10px; }
 
+    /* Payment toggle */
+    .payment-toggle {
+      background: white; border-radius: 14px; padding: 14px;
+      border: 1.5px solid var(--border);
+    }
+    .payment-toggle-label { font-size: 12px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; }
+    .toggle-btns { display: flex; gap: 8px; }
+    .toggle-btn {
+      flex: 1; padding: 10px; border: 2px solid var(--border);
+      border-radius: 10px; font-size: 14px; font-weight: 700;
+      cursor: pointer; background: white; color: var(--text2); transition: all .2s;
+      text-align: center;
+    }
+    .toggle-btn.active-100 { border-color: var(--primary); background: var(--primary-light); color: var(--primary); }
+    .toggle-btn.active-50  { border-color: var(--warn); background: var(--warn-light); color: var(--warn); }
+
+    /* Cart items */
+    .cart-items-block { background: white; border-radius: 14px; border: 1.5px solid var(--border); overflow: hidden; }
+    .cart-items-header {
+      padding: 12px 14px; border-bottom: 1px solid var(--border);
+      font-size: 12px; font-weight: 700; color: var(--text2);
+      text-transform: uppercase; letter-spacing: .5px;
+    }
     .cart-item {
-      background: white;
-      border-radius: 12px;
-      padding: 12px 14px;
-      margin-bottom: 8px;
-      border: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      gap: 10px;
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 14px; border-bottom: 1px solid var(--border);
     }
-    .cart-item-info { flex: 1; }
+    .cart-item:last-child { border-bottom: none; }
+    .cart-item-info { flex: 1; min-width: 0; }
     .cart-item-name { font-size: 14px; font-weight: 600; }
-    .cart-item-qty  { font-size: 13px; color: var(--muted); margin-top: 2px; }
-    .cart-remove {
-      background: none;
-      border: none;
-      color: var(--danger);
-      font-size: 20px;
-      cursor: pointer;
-      padding: 4px;
+    .cart-item-price-line { font-size: 12px; color: var(--text2); margin-top: 2px; }
+    .cart-item-total { font-size: 13px; font-weight: 700; color: var(--primary); white-space: nowrap; }
+
+    /* inline qty editor in cart */
+    .cart-qty-wrap {
+      display: flex; align-items: center; gap: 3px;
+      background: var(--bg); border-radius: 8px; padding: 2px 4px;
+    }
+    .cart-qty-btn {
+      width: 26px; height: 26px; border: none; border-radius: 6px;
+      background: var(--primary); color: white; font-size: 16px; font-weight: 700;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1;
+    }
+    .cart-qty-btn.remove { background: var(--danger); }
+    .cart-qty-input {
+      width: 38px; text-align: center; border: none;
+      background: transparent; font-size: 14px; font-weight: 700;
+      color: var(--text); outline: none;
     }
 
-    /* ── Order form ── */
-    .order-form { background: white; border-radius: 14px; border: 1px solid var(--border); padding: 16px; margin-top: 12px; }
-    .order-form h3 { font-size: 15px; font-weight: 700; margin-bottom: 12px; }
+    /* Summary */
+    .cart-summary { background: white; border-radius: 14px; border: 1.5px solid var(--border); padding: 14px; }
+    .summary-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; }
+    .summary-row-label { font-size: 13px; color: var(--text2); }
+    .summary-row-val { font-size: 13px; font-weight: 600; }
+    .summary-divider { border: none; border-top: 1px solid var(--border); margin: 8px 0; }
+    .summary-total-label { font-size: 15px; font-weight: 700; }
+    .summary-total-val { font-size: 18px; font-weight: 800; color: var(--primary); }
+    .summary-total-val.half { color: var(--warn); }
+
+    /* Order form */
+    .order-form { background: white; border-radius: 14px; border: 1.5px solid var(--border); padding: 14px; }
+    .order-form h3 { font-size: 14px; font-weight: 700; margin-bottom: 12px; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; }
     .form-field { margin-bottom: 12px; }
-    .form-field label { font-size: 13px; color: var(--muted); font-weight: 500; display: block; margin-bottom: 4px; }
+    .form-field label { font-size: 12px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 4px; }
     .form-field input {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      font-size: 14px;
-      outline: none;
+      width: 100%; padding: 10px 12px;
+      border: 1.5px solid var(--border); border-radius: 10px;
+      font-size: 14px; outline: none; transition: border .2s;
     }
     .form-field input:focus { border-color: var(--primary); }
     .required { color: var(--danger); }
 
     .submit-btn {
-      width: 100%;
-      padding: 14px;
-      border: none;
-      border-radius: 12px;
-      background: var(--primary);
-      color: white;
-      font-size: 16px;
-      font-weight: 700;
-      cursor: pointer;
-      margin-top: 4px;
-      transition: background .15s;
+      width: 100%; padding: 15px; border: none; border-radius: 12px;
+      background: var(--primary); color: white;
+      font-size: 16px; font-weight: 800; cursor: pointer; transition: background .15s;
     }
-    .submit-btn:active { background: #1d4ed8; }
+    .submit-btn:hover { background: #1d4ed8; }
     .submit-btn:disabled { background: var(--muted); cursor: default; }
 
-    /* ── Bottom cart bar ── */
-    .cart-bar {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      background: var(--primary);
-      color: white;
-      padding: 14px 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      box-shadow: 0 -2px 12px rgba(0,0,0,.12);
-      cursor: pointer;
-      transition: background .15s;
-    }
-    .cart-bar:active { background: #1d4ed8; }
-    .cart-bar.hidden { display: none; }
-    .cart-bar-left { font-size: 14px; }
-    .cart-bar-count { font-size: 22px; font-weight: 700; }
-    .cart-bar-label { opacity: .85; font-size: 12px; }
-    .cart-bar-right { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+    /* Empty cart */
+    .cart-empty { text-align: center; padding: 60px 20px; color: var(--muted); }
+    .cart-empty-icon { font-size: 48px; display: block; margin-bottom: 12px; }
 
-    /* ── Success screen ── */
-    .success-screen {
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 60px 30px;
-      text-align: center;
+    /* ── BOTTOM BAR ── */
+    .bottom-bar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--primary); color: white;
+      padding: 12px 18px;
+      display: flex; align-items: center; justify-content: space-between;
+      box-shadow: 0 -2px 16px rgba(0,0,0,.15);
+      cursor: pointer; transition: background .15s;
     }
-    .success-screen.show { display: flex; }
+    .bottom-bar:active { background: #1d4ed8; }
+    .bottom-bar.hidden { display: none; }
+    .bb-left { display: flex; flex-direction: column; }
+    .bb-count { font-size: 20px; font-weight: 800; line-height: 1.1; }
+    .bb-label { font-size: 11px; opacity: .8; }
+    .bb-right { font-size: 18px; font-weight: 800; }
+
+    /* ── NOT REGISTERED ── */
+    #not-registered {
+      display: none; padding: 40px 24px; text-align: center;
+    }
+    #not-registered .icon { font-size: 52px; display: block; margin-bottom: 16px; }
+    #not-registered h2 { font-size: 20px; font-weight: 700; margin-bottom: 10px; }
+    #not-registered p { font-size: 14px; color: var(--text2); line-height: 1.6; }
+
+    /* ── SUCCESS ── */
+    #success-screen {
+      display: none; padding: 60px 24px; text-align: center;
+      flex-direction: column; align-items: center;
+    }
+    #success-screen.show { display: flex; }
     .success-icon { font-size: 64px; margin-bottom: 20px; }
-    .success-screen h2 { font-size: 22px; font-weight: 700; color: var(--success); }
-    .success-screen p { font-size: 15px; color: var(--muted); margin-top: 10px; line-height: 1.5; }
+    #success-screen h2 { font-size: 22px; font-weight: 800; color: var(--success); }
+    #success-screen p { font-size: 14px; color: var(--text2); margin-top: 8px; line-height: 1.6; }
+    .success-amounts { margin-top: 16px; background: var(--success-light); border-radius: 12px; padding: 14px 20px; width: 100%; }
+    .sa-row { display: flex; justify-content: space-between; font-size: 14px; padding: 4px 0; }
+    .sa-total { font-weight: 800; font-size: 16px; color: var(--success); }
     .new-order-btn {
-      margin-top: 24px;
-      padding: 12px 28px;
-      border: none;
-      border-radius: 12px;
-      background: var(--primary);
-      color: white;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
+      margin-top: 24px; padding: 13px 30px; border: none; border-radius: 12px;
+      background: var(--primary); color: white;
+      font-size: 15px; font-weight: 700; cursor: pointer;
     }
 
-    /* ── Loading ── */
-    .loading { text-align: center; color: var(--muted); padding: 60px 0; font-size: 14px; }
-    .spinner { font-size: 32px; animation: spin 1s linear infinite; display: block; margin: 0 auto 12px; }
+    .loading { text-align: center; padding: 60px; color: var(--muted); }
+    .spinner { display: block; font-size: 32px; margin: 0 auto 12px; animation: spin 1s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
 
-<div id="app">
-
-  <!-- Header -->
-  <div class="header">
+<!-- HEADER -->
+<div class="header">
+  <div class="header-top">
     <h1>💊 Заявка на препараты</h1>
-    <p id="user-name">Загрузка...</p>
+    <span class="rep-badge" id="rep-badge">...</span>
   </div>
+  <div class="header-sub" id="header-sub">Загрузка...</div>
+</div>
 
-  <!-- Tabs -->
+<!-- NOT REGISTERED -->
+<div id="not-registered">
+  <span class="icon">🔒</span>
+  <h2>Нет доступа</h2>
+  <p>Вы не зарегистрированы как медпредставитель.<br>Обратитесь к администратору для получения доступа.</p>
+</div>
+
+<!-- MAIN APP -->
+<div id="main-app" style="display:none">
+
+  <!-- TABS -->
   <div class="tabs">
     <div class="tab active" id="tab-catalog" onclick="switchTab('catalog')">📋 Каталог</div>
-    <div class="tab" id="tab-cart" onclick="switchTab('cart')">🛒 Корзина <span id="cart-tab-count"></span></div>
+    <div class="tab" id="tab-cart" onclick="switchTab('cart')">
+      🛒 Корзина<span class="tab-badge" id="cart-badge" style="display:none">0</span>
+    </div>
   </div>
 
-  <!-- Catalog Tab -->
+  <!-- CATALOG -->
   <div id="page-catalog">
     <div class="search-box">
-      <input type="text" id="search-input" placeholder="🔍 Поиск препарата..." oninput="filterProducts()" />
+      <input type="text" id="search-input" placeholder="🔍 Найти препарат..." oninput="filterProducts()" />
     </div>
-    <div id="products-list" class="products-list">
+    <div class="products-list" id="products-list">
       <div class="loading"><span class="spinner">⏳</span>Загрузка каталога...</div>
     </div>
   </div>
 
-  <!-- Cart Tab -->
+  <!-- CART -->
   <div id="page-cart" style="display:none">
-    <div class="cart-section">
-      <div id="cart-empty" class="cart-empty">
-        <span>🛒</span>Корзина пуста.<br>Добавьте препараты из каталога.
-      </div>
-      <div id="cart-items"></div>
+    <div class="cart-wrap">
 
-      <div id="order-form" class="order-form" style="display:none">
-        <h3>📝 Данные для заявки</h3>
-        <div class="form-field">
-          <label>ФИО медпредставителя <span class="required">*</span></label>
-          <input type="text" id="field-name" placeholder="Иванов Иван Иванович" />
+      <!-- Пустая корзина -->
+      <div id="cart-empty" class="cart-empty">
+        <span class="cart-empty-icon">🛒</span>
+        <strong>Корзина пуста</strong><br>
+        <span style="font-size:13px;margin-top:6px;display:block">Добавьте препараты из каталога</span>
+      </div>
+
+      <!-- Содержимое (показывается когда есть товары) -->
+      <div id="cart-content" style="display:none">
+
+        <!-- Выбор % оплаты -->
+        <div class="payment-toggle">
+          <div class="payment-toggle-label">💳 Оплата</div>
+          <div class="toggle-btns">
+            <button class="toggle-btn active-100" id="btn-100" onclick="setPayment(100)">
+              100% — полная
+            </button>
+            <button class="toggle-btn" id="btn-50" onclick="setPayment(50)">
+              50% — предоплата
+            </button>
+          </div>
         </div>
-        <div class="form-field">
-          <label>Название учреждения <span class="required">*</span></label>
-          <input type="text" id="field-institution" placeholder="Аптека №5 / ГКБ №1" />
+
+        <!-- Список товаров в корзине -->
+        <div class="cart-items-block">
+          <div class="cart-items-header">Товары в заявке</div>
+          <div id="cart-items-list"></div>
         </div>
-        <div class="form-field">
-          <label>Телефон</label>
-          <input type="tel" id="field-phone" placeholder="+7 999 123-45-67" />
+
+        <!-- Итог -->
+        <div class="cart-summary" id="cart-summary"></div>
+
+        <!-- Форма заявки -->
+        <div class="order-form">
+          <h3>📝 Данные учреждения</h3>
+          <div class="form-field">
+            <label>Название учреждения <span class="required">*</span></label>
+            <input type="text" id="field-institution" placeholder="Аптека №5 / ГКБ №1" />
+          </div>
+          <button class="submit-btn" id="submit-btn" onclick="submitOrder()">
+            ✅ Отправить заявку
+          </button>
         </div>
-        <button class="submit-btn" onclick="submitOrder()">✅ Отправить заявку</button>
+
       </div>
     </div>
   </div>
 
-  <!-- Success Screen -->
-  <div id="success-screen" class="success-screen">
-    <div class="success-icon">🎉</div>
-    <h2>Заявка отправлена!</h2>
-    <p id="success-text">Ваша заявка принята и передана оператору.<br>Спасибо!</p>
-    <button class="new-order-btn" onclick="resetApp()">Новая заявка</button>
-  </div>
-
 </div>
 
-<!-- Bottom cart bar -->
-<div class="cart-bar hidden" id="cart-bar" onclick="switchTab('cart')">
-  <div class="cart-bar-left">
-    <div class="cart-bar-count" id="cart-bar-count">0</div>
-    <div class="cart-bar-label">позиций в корзине</div>
+<!-- SUCCESS -->
+<div id="success-screen">
+  <div class="success-icon">🎉</div>
+  <h2>Заявка отправлена!</h2>
+  <p id="success-text"></p>
+  <div class="success-amounts" id="success-amounts"></div>
+  <button class="new-order-btn" onclick="resetApp()">Новая заявка</button>
+</div>
+
+<!-- BOTTOM BAR -->
+<div class="bottom-bar hidden" id="bottom-bar" onclick="switchTab('cart')">
+  <div class="bb-left">
+    <div class="bb-count" id="bb-count">0 поз.</div>
+    <div class="bb-label">в корзине → оформить</div>
   </div>
-  <div class="cart-bar-right">Перейти к заявке →</div>
+  <div class="bb-right" id="bb-price">0.00</div>
 </div>
 
 <script>
-// ── Telegram WebApp init ────────────────────────────────────────────────────
 const tg = window.Telegram?.WebApp;
-if (tg) {
-  tg.ready();
-  tg.expand();
-}
+if (tg) { tg.ready(); tg.expand(); }
 
-const API_BASE = window.location.origin;
+const API = window.location.origin;
 const tgUser = tg?.initDataUnsafe?.user;
 
-document.getElementById("user-name").textContent =
-  tgUser ? `${tgUser.first_name} ${tgUser.last_name || ""}`.trim() : "Медпредставитель";
-
-// ── State ───────────────────────────────────────────────────────────────────
 let products = [];
-let cart = {};  // { productId: quantity }
+let cart = {};        // { productId: quantity }
+let paymentPercent = 100;
+let repInfo = null;   // { code, full_name }
 
-// ── Load products ───────────────────────────────────────────────────────────
-async function loadProducts() {
-  try {
-    const res = await fetch(`${API_BASE}/api/products/`);
-    products = await res.json();
-    renderProducts(products);
-  } catch(e) {
-    document.getElementById("products-list").innerHTML =
-      '<div class="loading">❌ Ошибка загрузки. Попробуйте обновить страницу.</div>';
-  }
-}
-
-function getStockBadge(p) {
-  if (p.stock <= 0) return `<span class="stock-badge zero">Нет в наличии</span>`;
-  if (p.stock < 50) return `<span class="stock-badge low">Осталось: ${p.stock} ${p.unit}</span>`;
-  return `<span class="stock-badge ok">В наличии: ${p.stock} ${p.unit}</span>`;
-}
-
-function renderProducts(list) {
-  const container = document.getElementById("products-list");
-  if (!list.length) {
-    container.innerHTML = '<div class="loading">Препаратов пока нет</div>';
+// ── INIT ─────────────────────────────────────────────────────────────────
+async function init() {
+  if (!tgUser?.id) {
+    // Если запущено не в Telegram — для теста показываем каталог
+    showApp({ code: 'TEST', full_name: 'Тест' });
     return;
   }
 
-  container.innerHTML = list.map(p => {
-    const inCart = cart[p.id] || 0;
-    const qty = inCart || 1;
-    const disabled = p.stock <= 0;
-    const cartClass = inCart > 0 ? "in-cart" : "";
-    const btnText = inCart > 0 ? `✓ В корзине: ${inCart} ${p.unit}` : "Добавить в корзину";
+  const res = await fetch(`${API}/api/orders/check-rep/${tgUser.id}`);
+  const data = await res.json();
 
+  if (!data.registered) {
+    document.getElementById('not-registered').style.display = 'block';
+    document.getElementById('header-sub').textContent = 'Нет доступа';
+    document.getElementById('rep-badge').textContent = '🔒';
+    return;
+  }
+
+  showApp(data);
+}
+
+function showApp(rep) {
+  repInfo = rep;
+  document.getElementById('rep-badge').textContent = `Код: ${rep.code}`;
+  document.getElementById('header-sub').textContent = rep.full_name;
+  document.getElementById('main-app').style.display = 'block';
+  loadProducts();
+}
+
+// ── PRODUCTS ─────────────────────────────────────────────────────────────
+async function loadProducts() {
+  const res = await fetch(`${API}/api/products/`);
+  products = await res.json();
+  renderProducts(products);
+}
+
+function getStockBadge(p) {
+  if (p.stock <= 0)  return `<span class="stock-badge badge-zero">Нет</span>`;
+  if (p.stock < 50)  return `<span class="stock-badge badge-low">Осталось: ${p.stock}</span>`;
+  return `<span class="stock-badge badge-ok">${p.stock} ${p.unit}</span>`;
+}
+
+function renderProducts(list) {
+  const el = document.getElementById('products-list');
+  if (!list.length) { el.innerHTML = '<div class="loading">Ничего не найдено</div>'; return; }
+
+  el.innerHTML = list.map(p => {
+    const inCart = cart[p.id] || 0;
+    const disabled = p.stock <= 0;
+    const priceStr = p.price > 0 ? `${p.price.toFixed(2)} / ${p.unit}` : '';
     return `
-      <div class="product-card ${disabled ? "out-of-stock" : ""}" id="card-${p.id}">
+      <div class="product-card ${disabled ? 'out-of-stock' : ''} ${inCart ? 'in-cart' : ''}" id="pcard-${p.id}">
         <div class="product-top">
-          <div>
+          <div style="min-width:0">
             <div class="product-name">${p.name}</div>
-            ${p.description ? `<div class="product-desc">${p.description}</div>` : ""}
+            ${p.description ? `<div class="product-desc">${p.description}</div>` : ''}
+            ${priceStr ? `<div class="product-price">💰 ${priceStr}</div>` : ''}
           </div>
           ${getStockBadge(p)}
         </div>
         <div class="product-controls">
-          <div class="qty-controls">
-            <button class="qty-btn" onclick="changeQty(${p.id}, -1)" ${disabled ? "disabled" : ""}>−</button>
-            <input class="qty-input" type="number" id="qty-${p.id}" value="${qty}" min="1" max="${p.stock}"
-              onchange="onQtyChange(${p.id})" ${disabled ? "disabled" : ""} />
-            <button class="qty-btn" onclick="changeQty(${p.id}, 1)" ${disabled ? "disabled" : ""}>+</button>
+          <div class="qty-wrap">
+            <button class="qty-btn" onclick="changeQty(${p.id},-1)" ${disabled?'disabled':''}>−</button>
+            <input class="qty-input" type="number" id="qty-${p.id}" value="${inCart||1}" min="1" max="${p.stock}" ${disabled?'disabled':''} onchange="onQtyInputChange(${p.id})" />
+            <button class="qty-btn" onclick="changeQty(${p.id},1)" ${disabled?'disabled':''}>+</button>
           </div>
-          <button class="add-btn ${cartClass}" id="btn-${p.id}"
-            onclick="addToCart(${p.id})" ${disabled ? "disabled" : ""}>
-            ${btnText}
+          <button class="add-btn ${inCart?'in-cart':''}" id="abtn-${p.id}"
+            onclick="addToCart(${p.id})" ${disabled?'disabled':''}>
+            ${inCart ? `✓ В корзине: ${inCart}` : 'Добавить'}
           </button>
         </div>
       </div>`;
-  }).join("");
+  }).join('');
 }
 
 function filterProducts() {
-  const q = document.getElementById("search-input").value.toLowerCase();
-  const filtered = products.filter(p => p.name.toLowerCase().includes(q));
-  renderProducts(filtered);
+  const q = document.getElementById('search-input').value.toLowerCase();
+  renderProducts(products.filter(p => p.name.toLowerCase().includes(q)));
 }
 
-// ── Cart logic ──────────────────────────────────────────────────────────────
-function changeQty(productId, delta) {
-  const input = document.getElementById(`qty-${productId}`);
-  const product = products.find(p => p.id === productId);
-  let val = parseInt(input.value) + delta;
-  val = Math.max(1, Math.min(val, product?.stock || 9999));
-  input.value = val;
-  if (cart[productId]) {
-    cart[productId] = val;
-    updateCartUI();
-  }
+// ── CART LOGIC ────────────────────────────────────────────────────────────
+function changeQty(pid, delta) {
+  const input = document.getElementById(`qty-${pid}`);
+  const p = products.find(x => x.id === pid);
+  let v = Math.max(1, Math.min(parseInt(input.value) + delta, p?.stock || 9999));
+  input.value = v;
+  if (cart[pid]) { cart[pid] = v; updateUI(); }
 }
 
-function onQtyChange(productId) {
-  if (cart[productId]) {
-    const input = document.getElementById(`qty-${productId}`);
-    cart[productId] = parseInt(input.value) || 1;
-    updateCartUI();
+function onQtyInputChange(pid) {
+  if (cart[pid]) {
+    const v = parseInt(document.getElementById(`qty-${pid}`).value) || 1;
+    cart[pid] = v;
+    updateUI();
   }
 }
 
-function addToCart(productId) {
-  const input = document.getElementById(`qty-${productId}`);
-  const qty = parseInt(input.value) || 1;
-  const product = products.find(p => p.id === productId);
-  
-  if (!product || product.stock <= 0) return;
-  if (product.limit_per_order && qty > product.limit_per_order) {
-    alert(`Максимум ${product.limit_per_order} ${product.unit} за одну заявку`);
-    return;
+function addToCart(pid) {
+  const p = products.find(x => x.id === pid);
+  if (!p || p.stock <= 0) return;
+  const qty = parseInt(document.getElementById(`qty-${pid}`).value) || 1;
+  if (qty > p.stock) { alert(`Доступно только ${p.stock} ${p.unit}`); return; }
+  if (p.limit_per_order && qty > p.limit_per_order) {
+    alert(`Лимит: не более ${p.limit_per_order} ${p.unit} за раз`); return;
   }
-  if (qty > product.stock) {
-    alert(`Доступно только ${product.stock} ${product.unit}`);
-    return;
-  }
-  
-  cart[productId] = qty;
-  updateCartUI();
-  
-  // Update button
-  const btn = document.getElementById(`btn-${productId}`);
-  if (btn) {
-    btn.className = "add-btn in-cart";
-    btn.textContent = `✓ В корзине: ${qty} ${product.unit}`;
-  }
-  
-  // Haptic feedback
-  tg?.HapticFeedback?.impactOccurred("light");
+  cart[pid] = qty;
+  updateUI();
+  tg?.HapticFeedback?.impactOccurred('light');
+
+  // Update card
+  const btn = document.getElementById(`abtn-${pid}`);
+  const card = document.getElementById(`pcard-${pid}`);
+  if (btn) { btn.className = 'add-btn in-cart'; btn.textContent = `✓ В корзине: ${qty}`; }
+  if (card) card.classList.add('in-cart');
 }
 
-function removeFromCart(productId) {
-  delete cart[productId];
-  updateCartUI();
-  renderProducts(products.filter(p => {
-    const q = document.getElementById("search-input")?.value?.toLowerCase() || "";
-    return p.name.toLowerCase().includes(q);
-  }));
+function cartRemove(pid) {
+  delete cart[pid];
+  updateUI();
+  renderCartItems();
+  // reset catalog card
+  const btn = document.getElementById(`abtn-${pid}`);
+  const card = document.getElementById(`pcard-${pid}`);
+  if (btn) { btn.className = 'add-btn'; btn.textContent = 'Добавить'; }
+  if (card) card.classList.remove('in-cart');
 }
 
-function updateCartUI() {
-  const items = Object.entries(cart);
-  const totalQty = items.reduce((s, [, q]) => s + q, 0);
-  
-  // Tab badge
-  const tabCount = document.getElementById("cart-tab-count");
-  tabCount.textContent = totalQty > 0 ? `(${totalQty})` : "";
-  tabCount.style.color = totalQty > 0 ? "#ef4444" : "";
-
-  // Bottom bar
-  const bar = document.getElementById("cart-bar");
-  const barCount = document.getElementById("cart-bar-count");
-  if (totalQty > 0) {
-    bar.classList.remove("hidden");
-    barCount.textContent = totalQty;
-  } else {
-    bar.classList.add("hidden");
-  }
-
-  // Cart items list
-  renderCartItems(items);
+function cartChangeQty(pid, delta) {
+  const p = products.find(x => x.id === pid);
+  const input = document.getElementById(`cqty-${pid}`);
+  let v = Math.max(1, Math.min(parseInt(input.value) + delta, p?.stock || 9999));
+  input.value = v;
+  cart[pid] = v;
+  updateUI();
+  renderCartItems();
+  // sync catalog qty
+  const catInput = document.getElementById(`qty-${pid}`);
+  if (catInput) catInput.value = v;
+  const btn = document.getElementById(`abtn-${pid}`);
+  if (btn) btn.textContent = `✓ В корзине: ${v}`;
 }
 
-function renderCartItems(items) {
-  const empty = document.getElementById("cart-empty");
-  const itemsEl = document.getElementById("cart-items");
-  const form = document.getElementById("order-form");
-  
-  if (!items.length) {
-    empty.style.display = "block";
-    itemsEl.innerHTML = "";
-    form.style.display = "none";
-    return;
-  }
-  
-  empty.style.display = "none";
-  form.style.display = "block";
-  
-  itemsEl.innerHTML = items.map(([pid, qty]) => {
-    const p = products.find(pr => pr.id === parseInt(pid));
+function cartQtyInput(pid) {
+  const input = document.getElementById(`cqty-${pid}`);
+  const p = products.find(x => x.id === pid);
+  let v = parseInt(input.value) || 1;
+  v = Math.max(1, Math.min(v, p?.stock || 9999));
+  input.value = v;
+  cart[pid] = v;
+  updateUI();
+}
+
+function setPayment(pct) {
+  paymentPercent = pct;
+  document.getElementById('btn-100').className = `toggle-btn ${pct===100?'active-100':''}`;
+  document.getElementById('btn-50').className  = `toggle-btn ${pct===50?'active-50':''}`;
+  renderSummary();
+  updateBottomBar();
+}
+
+// ── RENDER CART ───────────────────────────────────────────────────────────
+function renderCartItems() {
+  const entries = Object.entries(cart);
+  if (!entries.length) return;
+
+  document.getElementById('cart-items-list').innerHTML = entries.map(([pid, qty]) => {
+    pid = parseInt(pid);
+    const p = products.find(x => x.id === pid);
+    const lineTotal = p ? (p.price * qty).toFixed(2) : '—';
     return `
       <div class="cart-item">
         <div class="cart-item-info">
-          <div class="cart-item-name">${p?.name || "Препарат"}</div>
-          <div class="cart-item-qty">${qty} ${p?.unit || "шт"}</div>
+          <div class="cart-item-name">${p?.name || '?'}</div>
+          <div class="cart-item-price-line">${p?.price?.toFixed(2)} × ... = <strong>${lineTotal}</strong></div>
         </div>
-        <button class="cart-remove" onclick="removeFromCart(${pid})">✕</button>
+        <div class="cart-qty-wrap">
+          <button class="cart-qty-btn remove" onclick="cartRemove(${pid})">✕</button>
+          <button class="cart-qty-btn" onclick="cartChangeQty(${pid},-1)">−</button>
+          <input class="cart-qty-input" type="number" id="cqty-${pid}" value="${qty}"
+            onchange="cartQtyInput(${pid})" min="1" max="${p?.stock||999}" />
+          <button class="cart-qty-btn" onclick="cartChangeQty(${pid},1)">+</button>
+        </div>
+        <div class="cart-item-total">${lineTotal}</div>
       </div>`;
-  }).join("");
+  }).join('');
 }
 
-// ── Submit order ────────────────────────────────────────────────────────────
+function renderSummary() {
+  const entries = Object.entries(cart);
+  let full = 0;
+  entries.forEach(([pid, qty]) => {
+    const p = products.find(x => x.id === parseInt(pid));
+    if (p) full += p.price * qty;
+  });
+  full = Math.round(full * 100) / 100;
+  const pay = Math.round(full * paymentPercent) / 100;
+  const isHalf = paymentPercent === 50;
+
+  document.getElementById('cart-summary').innerHTML = `
+    <div class="summary-row">
+      <span class="summary-row-label">Позиций в заявке</span>
+      <span class="summary-row-val">${entries.length} препарат(а)</span>
+    </div>
+    <div class="summary-row">
+      <span class="summary-row-label">Полная стоимость</span>
+      <span class="summary-row-val">${full.toFixed(2)}</span>
+    </div>
+    ${isHalf ? `
+    <div class="summary-row">
+      <span class="summary-row-label">Скидка (50%)</span>
+      <span class="summary-row-val" style="color:var(--warn)">−${(full-pay).toFixed(2)}</span>
+    </div>` : ''}
+    <hr class="summary-divider"/>
+    <div class="summary-row">
+      <span class="summary-total-label">💳 К оплате</span>
+      <span class="summary-total-val ${isHalf?'half':''}">${pay.toFixed(2)}</span>
+    </div>
+    ${isHalf ? `<div style="font-size:11px;color:var(--warn);margin-top:4px;text-align:right">Предоплата 50%</div>` : ''}
+  `;
+}
+
+function updateUI() {
+  const entries = Object.entries(cart);
+  const totalQty = entries.reduce((s, [, q]) => s + q, 0);
+
+  // Tab badge
+  const badge = document.getElementById('cart-badge');
+  badge.textContent = totalQty;
+  badge.style.display = totalQty ? 'inline-block' : 'none';
+
+  // Empty/content
+  const hasItems = entries.length > 0;
+  document.getElementById('cart-empty').style.display = hasItems ? 'none' : 'block';
+  document.getElementById('cart-content').style.display = hasItems ? 'flex' : 'none';
+  if (document.getElementById('cart-content').style.display === 'flex') {
+    document.getElementById('cart-content').style.flexDirection = 'column';
+    document.getElementById('cart-content').style.gap = '10px';
+  }
+
+  if (hasItems) {
+    renderCartItems();
+    renderSummary();
+  }
+
+  updateBottomBar();
+}
+
+function updateBottomBar() {
+  const entries = Object.entries(cart);
+  if (!entries.length) {
+    document.getElementById('bottom-bar').classList.add('hidden');
+    return;
+  }
+  let full = 0;
+  entries.forEach(([pid, qty]) => {
+    const p = products.find(x => x.id === parseInt(pid));
+    if (p) full += p.price * qty;
+  });
+  const pay = Math.round(full * paymentPercent) / 100;
+  document.getElementById('bb-count').textContent = `${entries.length} поз.`;
+  document.getElementById('bb-price').textContent = `${pay.toFixed(2)}`;
+  document.getElementById('bottom-bar').classList.remove('hidden');
+}
+
+// ── SUBMIT ────────────────────────────────────────────────────────────────
 async function submitOrder() {
-  const name = document.getElementById("field-name").value.trim();
-  const institution = document.getElementById("field-institution").value.trim();
-  const phone = document.getElementById("field-phone").value.trim();
-  
-  if (!name) { alert("Укажите ФИО"); return; }
-  if (!institution) { alert("Укажите название учреждения"); return; }
-  if (!Object.keys(cart).length) { alert("Корзина пуста"); return; }
+  const institution = document.getElementById('field-institution').value.trim();
+  if (!institution) { alert('Укажите название учреждения'); return; }
+  if (!Object.keys(cart).length) { alert('Корзина пуста'); return; }
 
-  const btn = document.querySelector(".submit-btn");
-  btn.disabled = true;
-  btn.textContent = "Отправка...";
-
-  const items = Object.entries(cart).map(([pid, qty]) => ({
-    product_id: parseInt(pid),
-    quantity: qty,
-  }));
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true; btn.textContent = 'Отправка...';
 
   try {
-    const res = await fetch(`${API_BASE}/api/orders/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+    const res = await fetch(`${API}/api/orders/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         telegram_id: tgUser?.id || 0,
-        telegram_username: tgUser?.username || "",
-        full_name: name,
+        telegram_username: tgUser?.username || '',
         institution,
-        phone,
-        items,
+        payment_percent: paymentPercent,
+        items: Object.entries(cart).map(([pid, qty]) => ({
+          product_id: parseInt(pid), quantity: qty
+        })),
       }),
     });
-
     const data = await res.json();
     if (res.ok && data.ok) {
-      showSuccess(data.order_id);
-      tg?.HapticFeedback?.notificationOccurred("success");
+      showSuccess(data);
+      tg?.HapticFeedback?.notificationOccurred('success');
     } else {
-      alert(data.detail || "Ошибка при отправке заявки");
-      btn.disabled = false;
-      btn.textContent = "✅ Отправить заявку";
+      alert(data.detail || 'Ошибка при отправке заявки');
+      btn.disabled = false; btn.textContent = '✅ Отправить заявку';
     }
-  } catch(e) {
-    alert("Ошибка сети. Проверьте подключение.");
-    btn.disabled = false;
-    btn.textContent = "✅ Отправить заявку";
+  } catch {
+    alert('Ошибка сети. Проверьте подключение.');
+    btn.disabled = false; btn.textContent = '✅ Отправить заявку';
   }
 }
 
-function showSuccess(orderId) {
-  document.getElementById("app").style.display = "none";
-  document.getElementById("cart-bar").style.display = "none";
-  const screen = document.getElementById("success-screen");
-  screen.classList.add("show");
-  document.getElementById("success-text").textContent =
-    `Заявка #${orderId} принята и передана оператору. Спасибо!`;
+function showSuccess(data) {
+  document.getElementById('main-app').style.display = 'none';
+  document.getElementById('bottom-bar').style.display = 'none';
+  const sc = document.getElementById('success-screen');
+  sc.classList.add('show');
+  document.getElementById('success-text').textContent =
+    `Заявка #${data.order_id} от ${repInfo?.full_name} принята.`;
+  document.getElementById('success-amounts').innerHTML = `
+    <div class="sa-row"><span>Полная стоимость</span><span>${data.total_price?.toFixed(2)}</span></div>
+    <div class="sa-row"><span>Оплата ${data.payment_percent}%</span><span class="sa-total">${data.payment_amount?.toFixed(2)}</span></div>
+  `;
 }
 
 function resetApp() {
-  cart = {};
-  document.getElementById("success-screen").classList.remove("show");
-  document.getElementById("app").style.display = "block";
-  switchTab("catalog");
+  cart = {}; paymentPercent = 100;
+  document.getElementById('success-screen').classList.remove('show');
+  document.getElementById('main-app').style.display = 'block';
+  document.getElementById('bottom-bar').style.display = '';
+  switchTab('catalog');
   loadProducts();
 }
 
-// ── Tabs ────────────────────────────────────────────────────────────────────
+// ── TABS ──────────────────────────────────────────────────────────────────
 function switchTab(tab) {
-  document.getElementById("page-catalog").style.display = tab === "catalog" ? "block" : "none";
-  document.getElementById("page-cart").style.display = tab === "cart" ? "block" : "none";
-  document.getElementById("tab-catalog").classList.toggle("active", tab === "catalog");
-  document.getElementById("tab-cart").classList.toggle("active", tab === "cart");
+  document.getElementById('page-catalog').style.display = tab==='catalog'?'block':'none';
+  document.getElementById('page-cart').style.display = tab==='cart'?'block':'none';
+  document.getElementById('tab-catalog').classList.toggle('active', tab==='catalog');
+  document.getElementById('tab-cart').classList.toggle('active', tab==='cart');
+  if (tab==='cart') updateUI();
 }
 
-// ── Init ────────────────────────────────────────────────────────────────────
-loadProducts();
+init();
 </script>
 </body>
 </html>

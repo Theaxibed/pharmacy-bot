@@ -15,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from db.models import init_db
 from api.routes.products import router as products_router
 from api.routes.orders import router as orders_router
+from api.routes.admin import router as admin_router
 from bot.main import bot, dp, setup_bot, process_update
 
 logger = logging.getLogger(__name__)
@@ -54,6 +55,7 @@ app.add_middleware(
 # API роуты
 app.include_router(products_router)
 app.include_router(orders_router)
+app.include_router(admin_router)
 
 
 # Webhook endpoint для Telegram

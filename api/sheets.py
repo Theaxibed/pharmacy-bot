@@ -10,66 +10,54 @@ SCOPES = [
 ]
 
 SHEET_HEADERS = [
-    "ID", "Дата", "Медпредставитель", "Username", "Учреждение",
-    "Телефон", "Препараты и количество", "Всего позиций", "Статус"
+    "ID", "Дата", "Код", "Медпредставитель", "Username",
+    "Учреждение", "Препараты и количество",
+    "Сумма полная", "Оплата %", "К оплате", "Статус"
 ]
 
 
 def get_sheets_client():
     creds_json = os.getenv("GOOGLE_CREDENTIALS_JSON")
     if not creds_json:
-        raise ValueError("GOOGLE_CREDENTIALS_JSON не задан в .env")
-    creds_data = json.loads(creds_json)
-    creds = Credentials.from_service_account_info(creds_data, scopes=SCOPES)
+        raise ValueError("GOOGLE_CREDENTIALS_JSON не задан")
+    creds = Credentials.from_service_account_info(json.loads(creds_json), scopes=SCOPES)
     return gspread.authorize(creds)
 
 
 def get_or_create_worksheet():
     client = get_sheets_client()
-    sheet_id = os.getenv("GOOGLE_SHEET_ID")
-    spreadsheet = client.open_by_key(sheet_id)
-    
+    spreadsheet = client.open_by_key(os.getenv("GOOGLE_SHEET_ID"))
     try:
         ws = spreadsheet.worksheet("Заявки")
     except gspread.WorksheetNotFound:
         ws = spreadsheet.add_worksheet("Заявки", rows=1000, cols=20)
         ws.append_row(SHEET_HEADERS)
-        # Форматирование шапки
-        ws.format("A1:I1", {
+        ws.format("A1:K1", {
             "backgroundColor": {"red": 0.2, "green": 0.6, "blue": 0.9},
             "textFormat": {"bold": True, "foregroundColor": {"red": 1, "green": 1, "blue": 1}}
         })
     return ws
 
 
-def append_order_to_sheet(order_id: int, full_name: str, username: str,
-                           institution: str, phone: str,
-                           items: list[dict], products_map: dict) -> int:
-    """
-    Добавляет заявку в таблицу. Возвращает номер строки.
-    products_map: {product_id: product_name}
-    """
+def append_order_to_sheet(order_id, rep_code, full_name, username, institution,
+                           items, products_map, total_price, payment_percent, payment_amount):
     ws = get_or_create_worksheet()
-    
-    # Формируем читаемую строку препаратов
     items_str = "; ".join(
-        f"{products_map.get(i['product_id'], i['product_id'])}: {i['quantity']} {i.get('unit', 'шт')}"
+        f"{products_map.get(i['product_id'], '?')}: {i['quantity']} {i.get('unit','шт')} × {i.get('price',0):.2f}"
         for i in items
     )
-    total = sum(i["quantity"] for i in items)
-    
     row = [
         order_id,
         datetime.now().strftime("%d.%m.%Y %H:%M"),
+        rep_code,
         full_name,
         f"@{username}" if username else "—",
         institution,
-        phone or "—",
         items_str,
-        total,
-        "Новая"
+        f"{total_price:.2f}",
+        f"{payment_percent}%",
+        f"{payment_amount:.2f}",
+        "Новая",
     ]
-    
     ws.append_row(row)
-    # Возвращаем номер последней строки
     return len(ws.get_all_values())

@@ -16,6 +16,7 @@ async def list_products(db: AsyncSession = Depends(get_db)):
             "description": p.description,
             "unit": p.unit,
             "stock": p.stock,
+            "price": p.price,
             "limit_per_order": p.limit_per_order,
             "available": p.stock > 0,
         }
